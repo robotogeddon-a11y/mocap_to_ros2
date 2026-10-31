@@ -1,0 +1,25 @@
+# QuickMagic "Mixamo" skeleton. Select with mapping:=mixamo.
+# Bone names from your FBX (run the Blender script without an output path to list them).
+# Matching is case-insensitive and ignores prefixes, so "LeftArm" matches "mixamorig:LeftArm".
+mocap_player:
+  ros__parameters:
+    hips_bone: Hips
+    neck_bone: Neck
+    left_shoulder_bone: LeftArm       # bone whose head is the shoulder joint
+    left_elbow_bone: LeftForeArm      # head = elbow
+    left_wrist_bone: LeftHand         # head = wrist
+    right_shoulder_bone: RightArm
+    right_elbow_bone: RightForeArm
+    right_wrist_bone: RightHand
+    speed: 1.0                # playback speed multiplier
+    loop: true
+    smoothing_window: 5       # frames; 1 disables smoothing
+    min_elbow_for_yaw: 0.35   # rad; below this the upper-arm twist is held
+    # Mocap skeleton drawn next to the robot (topic /mocap_skeleton) for comparison.
+    # Each bone links to its nearest listed ancestor. Empty list disables it.
+    skeleton_bones: [Hips, Spine1, Neck, Head,
+                     LeftShoulder, LeftArm, LeftForeArm, LeftHand,
+                     RightShoulder, RightArm, RightForeArm, RightHand,
+                     LeftUpLeg, LeftLeg, LeftFoot, LeftToeBase,
+                     RightUpLeg, RightLeg, RightFoot, RightToeBase]
+    skeleton_offset: [0.0, 0.8, 0.0]   # metres in base_link; [0, 0, 0] overlays it on the robot
