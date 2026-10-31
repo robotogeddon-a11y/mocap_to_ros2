@@ -12,10 +12,9 @@ setup(
         ("share/ament_index/resource_index/packages", ["resource/" + package_name]),
         ("share/" + package_name, ["package.xml"]),
         ("share/" + package_name + "/launch", glob("launch/*.py")),
-        ("share/" + package_name + "/urdf", glob("urdf/*.urdf")),
         ("share/" + package_name + "/urdf/g1", glob("urdf/g1/*")),
         ("share/" + package_name + "/meshes/g1", glob("meshes/g1/*")),
-        ("share/" + package_name + "/config", glob("config/*.yaml") + glob("config/*.rviz")),
+        ("share/" + package_name + "/config", glob("config/*.rviz")),
     ],
     install_requires=["setuptools"],
     zip_safe=True,
@@ -25,7 +24,6 @@ setup(
     license="MIT",
     entry_points={
         "console_scripts": [
-            "mocap_player = mocap_teleop.mocap_player:main",
             "robot_player = mocap_teleop.robot_player:main",
         ],
     },

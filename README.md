@@ -153,7 +153,7 @@ you'll pass that number as `skip_frames` if it's different.
 
 ```bash
 mkdir -p ~/salsa_ws/src && cd ~/salsa_ws/src
-git clone https://github.com/<your-github-user>/mocap_to_ros2.git     # ← replace with the repo link
+git clone https://github.com/robotogeddon-a11y/mocap_to_ros2.git
 ```
 
 colcon finds the two packages inside the repo by itself:
@@ -340,42 +340,20 @@ ros2 launch mocap_gz_replay g1_gazebo.launch.py mocap_file:=$G1_JSON speed:=0.5 
 
 ---
 
-## Appendix A — arms-only, with our own math (optional deep-dive section)
-
-The same clip exported from QuickMagic as a **Mixamo FBX** gives human joint *positions*; `mocap_player`
-turns those into joint angles with our own retargeting math for a simple torso + 2-arm robot. Good for
-explaining *how* retargeting works.
-
-QuickMagic export: Basic Model V2.1 · Full Body · Hand **off** · First keyframe **Original Pose** · Export
-**Mixamo** · In-Place / Mesh Penetration Prevention / Keyframe Reduction **off**.
-
-```bash
-# FBX → JSON with Blender (headless): list bones, then export
-blender --background --python ~/salsa_ws/src/mocap_to_ros2/blender/export_bone_positions.py -- salsa_mixamo.fbx
-blender --background --python ~/salsa_ws/src/mocap_to_ros2/blender/export_bone_positions.py -- salsa_mixamo.fbx salsa_mixamo.json
-# play it on the simple humanoid, with the human skeleton drawn next to it
-ros2 launch mocap_teleop display.launch.py mapping:=mixamo mocap_file:=$HOME/salsa_demo/salsa_mixamo.json
-```
-
-The math (shoulder pitch/roll from the upper-arm direction, elbow from the angle between upper arm and
-forearm, twist from the forearm, singularities) is written up in `README.md` → "How the mapping works".
-
-## Appendix B — files
+## Appendix — files
 
 ```
 mocap_to_ros2/
 ├── mocap_teleop/                       # ROS 2 Python package
 │   ├── mocap_teleop/robot_player.py    # QuickMagic robot JSON → /joint_states + TF + /root_pose
-│   ├── mocap_teleop/mocap_player.py    # (Appendix A) FBX joint positions → arm angles
 │   ├── urdf/g1/g1_29dof_rev_1_0.urdf   # Unitree G1 29-DOF (BSD-3, from unitree_ros)
 │   ├── meshes/g1/*.STL                 # its meshes
 │   ├── launch/g1.launch.py             # G1 in RViz
 │   └── config/g1.rviz
-├── mocap_gz_replay/                    # ROS 2 C++ package
-│   ├── src/MocapReplay.cc              # Gazebo system plugin: exact replay
-│   ├── worlds/dance_floor.sdf          # gravity off, visual-only floor, camera
-│   └── launch/g1_gazebo.launch.py      # Gazebo + bridge + player (+ RViz)
-└── blender/export_bone_positions.py    # (Appendix A) FBX → JSON
+└── mocap_gz_replay/                    # ROS 2 C++ package
+    ├── src/MocapReplay.cc              # Gazebo system plugin: exact replay
+    ├── worlds/dance_floor.sdf          # gravity off, visual-only floor, camera
+    └── launch/g1_gazebo.launch.py      # Gazebo + bridge + player (+ RViz)
 ```
 
 ---
