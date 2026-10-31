@@ -5,7 +5,7 @@
   <version>0.1.0</version>
   <description>Exact (kinematic) replay of mocap joint angles + root pose in Gazebo Sim</description>
   <maintainer email="robotogeddon@gmail.com">Robotogeddon</maintainer>
-  <license>MIT</license>
+  <license>Apache-2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 

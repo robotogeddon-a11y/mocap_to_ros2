@@ -21,7 +21,7 @@ setup(
     maintainer="Robotogeddon",
     maintainer_email="robotogeddon@gmail.com",
     description="Drive a ROS2 robot model from video motion capture",
-    license="MIT",
+    license="Apache-2.0",
     entry_points={
         "console_scripts": [
             "robot_player = mocap_teleop.robot_player:main",

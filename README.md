@@ -360,3 +360,6 @@ mocap_to_ros2/
 
 **Links:** QuickMagic — `https://www.quickmagic.ai?code=7kaf7f` (code **`7kaf7f`** → 70 V-Coins) · `#QuickMagic`
 · Unitree G1 description: `github.com/unitreerobotics/unitree_ros` (BSD-3)
+
+**License:** Apache-2.0 (see `LICENSE`). The Unitree G1 URDF and meshes in `mocap_teleop/urdf/g1/` and
+`mocap_teleop/meshes/g1/` keep their original BSD-3 license (`LICENSE_unitree_ros`).

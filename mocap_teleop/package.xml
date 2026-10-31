@@ -5,7 +5,7 @@
   <version>0.1.0</version>
   <description>Drive a ROS2 robot model from video motion capture (QuickMagic Unitree G1 export)</description>
   <maintainer email="robotogeddon@gmail.com">Robotogeddon</maintainer>
-  <license>MIT</license>
+  <license>Apache-2.0</license>
 
   <exec_depend>rclpy</exec_depend>
   <exec_depend>sensor_msgs</exec_depend>
