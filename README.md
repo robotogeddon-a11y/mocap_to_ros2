@@ -198,7 +198,7 @@ Expect `Summary: 2 packages finished`. **Every new terminal:** `source ~/salsa_w
 ## 6. The G1 dances in RViz
 
 ```bash
-G1_JSON=$(ls ~/salsa_demo/qm_g1/*_robot_g1.json)
+G1_JSON=$(ls ~/salsa_demo/qm_g1/Salsa_G1/*_robot_g1.json)
 ros2 launch mocap_teleop g1.launch.py mocap_file:=$G1_JSON
 ```
 
