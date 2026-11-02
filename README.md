@@ -163,7 +163,78 @@ colcon finds the two packages inside the repo by itself:
 | `mocap_teleop` | Python | `robot_player` node, the G1 URDF + meshes, RViz launch + config |
 | `mocap_gz_replay` | C++ | `MocapReplay` Gazebo plugin, dance-floor world, Gazebo launch |
 
-### 5.2 Where the G1 model comes from (already included — explain, don't redo)
+### 5.2 What's inside the two packages
+
+The split follows one rule: **`mocap_teleop` is pure ROS 2 and knows nothing about Gazebo**, and
+**`mocap_gz_replay` adds Gazebo on top of it**. You can use RViz without ever installing Gazebo. The
+Gazebo package reuses the node and the URDF from `mocap_teleop` (it `exec_depend`s on it) and doesn't copy them.
+
+```
+mocap_teleop (ament_python)                     mocap_gz_replay (ament_cmake)
+┌──────────────────────────────────┐            ┌──────────────────────────────────────┐
+│ robot_player ──/joint_states────►│ RSP → RViz │ ros_gz_bridge ──gz.msgs.Model──┐      │
+│      │       ──TF world→pelvis──►│            │               ──gz.msgs.Pose───┤      │
+│      └───────/root_pose─────────────────────────►                              ▼      │
+│ urdf/ meshes/ config/g1.rviz     │            │            MocapReplay (gz::sim::System)│
+│ launch/g1.launch.py              │            │ worlds/dance_floor.sdf                │
+└──────────────────────────────────┘            │ launch/g1_gazebo.launch.py            │
+                                                └──────────────────────────────────────┘
+```
+
+#### `mocap_teleop`: the ROS 2 side (Python)
+
+| Content | What it is |
+|---|---|
+| `robot_player` node | The only node we wrote. It loads the QuickMagic JSON once and runs a wall-timer at `fps × speed` |
+| `urdf/g1/` + `meshes/g1/` | Unitree's G1 29-DOF URDF, with mesh paths changed to `package://mocap_teleop/...` |
+| `config/g1.rviz` | Fixed Frame `world`, a RobotModel on `/robot_description` and a camera facing the dancer |
+| `launch/g1.launch.py` | `robot_state_publisher` (URDF read into the `robot_description` parameter) + `robot_player` + `rviz2` |
+
+The `robot_player` interface:
+
+| | Name | Type | Notes |
+|---|---|---|---|
+| pub | `/joint_states` | `sensor_msgs/JointState` | 29 names + positions, one JSON row per tick. `velocity`/`effort` are zero-filled because `ros_gz_bridge` reads all three arrays |
+| TF | `world → pelvis` | `tf2_ros.TransformBroadcaster` | The floating base. `robot_state_publisher` adds every link below `pelvis` |
+| pub | `/root_pose` | `geometry_msgs/Pose` | The same pelvis pose as a plain topic, for Gazebo (the bridge can't consume TF) |
+| params | `mocap_file`, `skip_frames`, `speed`, `in_place`, `start_yaw_deg`, `loop`, `root_motion`, `world_frame`, `root_frame` | | All set in the launch files (see step 8) |
+
+Notice there's **no `joint_state_publisher`**: `robot_player` takes its place and feeds recorded angles to
+`robot_state_publisher`. That's also why the URDF needs no changes.
+
+#### `mocap_gz_replay`: the Gazebo side (C++)
+
+| Content | What it is |
+|---|---|
+| `src/MocapReplay.cc` → `libMocapReplay.so` | A **Gazebo Sim system plugin** (`ISystemConfigure` + `ISystemPreUpdate`), not a ROS node. It links only to `gz-sim`, `gz-transport`, `gz-msgs` and `gz-plugin` through the Jazzy `gz_*_vendor` packages. There's no `rclcpp` |
+| `worlds/dance_floor.sdf` | Gravity `0 0 0`, a 1 ms step, a floor plane with **no collision**, and the `<plugin filename="MocapReplay">` tag with `model_name` / `joint_topic` / `pose_topic` |
+| `launch/g1_gazebo.launch.py` | Starts everything in `g1.launch.py` (it reuses `robot_player` and the URDF from `mocap_teleop`) + `gz sim` + `ros_gz_sim create` + `ros_gz_bridge`, and an optional RViz |
+
+How the plugin works:
+- **Configure:** reads the three SDF tags and subscribes to the two **Gazebo** topics with a
+  `gz::transport::Node`.
+- **Callbacks:** store the latest joint positions and pose (protected by a mutex, because gz-transport
+  calls them on a different thread).
+- **PreUpdate (every 1 ms step):** finds the `g1` model the first time it's needed, because the model is
+  spawned *after* the world loads. Then `Joint::ResetPosition` / `ResetVelocity(0)` on all 29 joints and
+  `Model::SetWorldPoseCmd` for the pelvis. Physics runs afterwards but has nothing left to do.
+
+Getting from ROS to the plugin is a one-way `parameter_bridge`:
+```
+/joint_states@sensor_msgs/msg/JointState]gz.msgs.Model
+/root_pose@geometry_msgs/msg/Pose]gz.msgs.Pose
+```
+The launch file also sets two environment variables that are easy to forget:
+`GZ_SIM_SYSTEM_PLUGIN_PATH` (so Gazebo can find `libMocapReplay.so` in `install/mocap_gz_replay/lib`) and
+`GZ_SIM_RESOURCE_PATH` (so Gazebo can resolve the URDF's `package://mocap_teleop/meshes/...` paths).
+
+> 🎙️ **Say:** "Two packages, one rule: `mocap_teleop` is plain ROS 2. One node publishes joint states
+> and the floating-base TF, and `robot_state_publisher` and RViz do the rest. `mocap_gz_replay` is the
+> Gazebo part: a small C++ system plugin that listens on Gazebo topics through `ros_gz_bridge` and, at
+> every physics step, puts each joint and the pelvis exactly where the recording says. Same node, same
+> URDF, same topics. Gazebo just becomes one more consumer."
+
+### 5.3 Where the G1 model comes from (already included — explain, don't redo)
 
 Unitree publishes the G1 description (BSD-3 license) in `unitreerobotics/unitree_ros`. We use the
 **29-DOF rev 1.0** model, `g1_29dof_rev_1_0.urdf` — every joint name matches QuickMagic's export exactly.
@@ -180,12 +251,13 @@ sed 's#filename="meshes/#filename="package://mocap_teleop/meshes/g1/#g' \
 > 🎙️ **Say:** "Use the 29-DOF model — the cheaper 23-DOF G1 has no waist roll or pitch, and that's exactly
 > where salsa hip motion comes from."
 
-### 5.3 Install dependencies and build
+### 5.4 Install dependencies and build
 
 ```bash
 cd ~/salsa_ws
 source /opt/ros/jazzy/setup.bash
-sudo rosdep init 2>/dev/null; rosdep update
+sudo rosdep init
+sudo rosdep update
 rosdep install --from-paths src --ignore-src -y
 colcon build --symlink-install
 source install/setup.bash
