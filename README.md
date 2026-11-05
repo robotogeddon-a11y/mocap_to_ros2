@@ -16,14 +16,6 @@ salsa video ──► QuickMagic (AI mocap + robot retargeting) ──► G1 joi
                robot_state_publisher → RViz        MocapReplay plugin → Gazebo Sim
 ```
 
-> 🎙️ **Say:** "QuickMagic does the hard part — it watches the dancer and works out what every one of the
-> G1's 29 motors would have to do. Our job is to get that into ROS 2, see it in RViz, and replay it in Gazebo."
-
-**Time:** ~1 hour, plus QuickMagic processing time. **Cost:** a few dozen V-Coins per clip
-(a 25 s clip cost 24 V-Coins — the dialog shows the estimate before you confirm).
-
----
-
 ## 0. What you need
 
 | | |
@@ -41,11 +33,6 @@ sudo apt install ros-jazzy-desktop ros-jazzy-ros-gz \
 source /opt/ros/jazzy/setup.bash
 gz sim --version          # expect: Gazebo Sim, version 8.x
 ```
-
-> 🎙️ **Say (disclosure):** "QuickMagic sponsors this video through their affiliate program — the link and
-> code are in the description, and the code gets you 70 free V-Coins instead of 50."
-
----
 
 ## 1. Create the project folder
 
@@ -74,15 +61,7 @@ What makes a clip work well:
 | Good light, clothes that contrast with the background | Baggy or flowing dresses that hide the knees |
 | 10–30 s of the best part | Long clips (cost more V-Coins and take longer) |
 
-Trim to the best 10–30 s (here: from 0:05 to 0:25) and drop the audio:
-
-```bash
-ffmpeg -ss 00:00:05 -to 00:00:25 -i original.mp4 -c:v libx264 -crf 18 -an ~/salsa_demo/salsa.mp4
-```
-
-> 🎙️ **Say:** "The AI can only copy what it can see — so one dancer, whole body, camera on a tripod."
-
----
+Trim to the best 10–30 s (here: from 0:05 to 0:25)
 
 ## 3. QuickMagic: video → Unitree G1 motion
 
@@ -107,11 +86,6 @@ mkdir -p ~/salsa_demo/qm_g1 && cd ~/salsa_demo/qm_g1
 unzip ~/Downloads/<downloaded_file>.zip     # → <id>_robot_g1.json, <id>_robot_g1.pkl, README.md
 ls
 ```
-
-> 🎙️ **Say:** "This is the key feature for robotics: QuickMagic doesn't just give us an animated character,
-> it gives us joint angles for a real robot — the Unitree G1."
-
----
 
 ## 4. Look inside the export
 
@@ -141,11 +115,6 @@ What's in the file:
 
 The first frames are the **T-pose** (shoulder roll ≈ 1.57 rad = arms straight out). Count them — usually **2** —
 you'll pass that number as `skip_frames` if it's different.
-
-> 🎙️ **Say:** "Every row is one video frame; every column is one motor. 30 rows per second. That's all a
-> robot needs to dance."
-
----
 
 ## 5. Build the ROS 2 workspace
 
@@ -228,12 +197,6 @@ The launch file also sets two environment variables that are easy to forget:
 `GZ_SIM_SYSTEM_PLUGIN_PATH` (so Gazebo can find `libMocapReplay.so` in `install/mocap_gz_replay/lib`) and
 `GZ_SIM_RESOURCE_PATH` (so Gazebo can resolve the URDF's `package://mocap_teleop/meshes/...` paths).
 
-> 🎙️ **Say:** "Two packages, one rule: `mocap_teleop` is plain ROS 2. One node publishes joint states
-> and the floating-base TF, and `robot_state_publisher` and RViz do the rest. `mocap_gz_replay` is the
-> Gazebo part: a small C++ system plugin that listens on Gazebo topics through `ros_gz_bridge` and, at
-> every physics step, puts each joint and the pelvis exactly where the recording says. Same node, same
-> URDF, same topics. Gazebo just becomes one more consumer."
-
 ### 5.3 Where the G1 model comes from (already included — explain, don't redo)
 
 Unitree publishes the G1 description (BSD-3 license) in `unitreerobotics/unitree_ros`. We use the
@@ -247,9 +210,6 @@ sed 's#filename="meshes/#filename="package://mocap_teleop/meshes/g1/#g' \
     robots/g1_description/g1_29dof_rev_1_0.urdf > g1_29dof_rev_1_0.urdf
 # → mocap_teleop/urdf/g1/   (+ the referenced .STL files → mocap_teleop/meshes/g1/, + LICENSE)
 ```
-
-> 🎙️ **Say:** "Use the 29-DOF model — the cheaper 23-DOF G1 has no waist roll or pitch, and that's exactly
-> where salsa hip motion comes from."
 
 ### 5.4 Install dependencies and build
 
@@ -306,11 +266,6 @@ ros2 topic echo --once /joint_states        # 29 names + positions
 ros2 run tf2_ros tf2_echo world pelvis      # the pelvis moving and bobbing
 ```
 
-> 🎙️ **Say:** "No inverse kinematics on our side here — QuickMagic already did the retargeting. ROS just
-> plays it back: joint angles in, moving robot out."
-
----
-
 ## 7. The G1 dances in Gazebo (exact replay)
 
 Stop the RViz launch (Ctrl+C), then:
@@ -356,13 +311,6 @@ Check it:
 gz model --list                                   # floor, g1
 gz topic -e -t /stats -n 1 | grep real_time_factor  # ≈ 1.0
 ```
-
-> 🎙️ **Say:** "Gazebo would normally simulate gravity and contacts. Here we switch both off and teleport every
-> joint to the recorded angle each millisecond — a perfect kinematic replay. Making it balance for real is
-> part 2."
-
----
-
 ## 8. Options (both launch files)
 
 | Argument | Default | Effect |
@@ -381,8 +329,6 @@ Example — slow-motion close-up of the footwork, on the spot:
 ros2 launch mocap_gz_replay g1_gazebo.launch.py mocap_file:=$G1_JSON speed:=0.5 in_place:=true
 ```
 
----
-
 ## 9. Troubleshooting
 
 | Symptom | Fix |
@@ -396,8 +342,6 @@ ros2 launch mocap_gz_replay g1_gazebo.launch.py mocap_file:=$G1_JSON speed:=0.5 
 | Warning `libEGL … driver (null)` / "Detected Wayland" | Harmless — Gazebo switches Qt to X11 by itself. |
 | Gazebo slow (laptop, hybrid GPU) | Run on the NVIDIA GPU: prefix with `__NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia`. |
 | Old results after editing code | `source install/setup.bash` again; after renaming files: `rm -rf build install` and rebuild. |
-
----
 
 ## 10. Limits and what's next
 
